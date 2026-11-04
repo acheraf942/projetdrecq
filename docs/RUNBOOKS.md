@@ -37,6 +37,8 @@ docker exec fleet-node1 tail -1 /var/log/fleetinfo/deploy.log   # resultat=ECHEC
 ```
 Il faut demander une version différente de celle qui est en ligne.
 
+Sur le cloud : `curl http://<IP>/health`, puis `sudo tail -1 /var/log/fleetinfo/deploy.log` en SSH.
+
 ---
 
 ## 2. Revenir à une version précédente

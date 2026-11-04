@@ -25,7 +25,9 @@ resource "google_compute_instance" "vm" {
   }
 
   # GCP crée l'utilisateur et autorise la clé SSH.
+  # Le lab active OS Login sur le projet, ce qui ignore ssh-keys : on le coupe sur nos VM.
   metadata = {
-    ssh-keys = "${var.ssh_user}:${var.ssh_public_key}"
+    ssh-keys       = "${var.ssh_user}:${var.ssh_public_key}"
+    enable-oslogin = "FALSE"
   }
 }

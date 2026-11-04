@@ -1,4 +1,4 @@
-# .gitignore — tout ce qui est sensible ou généré ne doit JAMAIS arriver dans Git.
+# .gitignore : tout ce qui est sensible ou généré ne doit JAMAIS arriver dans Git.
 
 # --- Ansible ---
 # Mot de passe Vault : transmis hors Git (voir README, section « Prérequis »).
@@ -10,6 +10,7 @@
 *.pem
 id_rsa*
 id_ed25519*
+fleet_gcp*
 local/ssh/
 
 # --- Terraform ---
@@ -36,5 +37,3 @@ __pycache__/
 # --- Inventaire cloud généré par Terraform (contient le project_id du lab) ---
 ansible/inventories/cloud/fleet.gcp.yml
 
-# Fiche de révision de l'équipe (pas un livrable).
-docs/COMPRENDRE.md

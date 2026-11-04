@@ -1,4 +1,4 @@
-# Socle Web Automatisé — Fleet Info
+# Socle Web Automatisé - Fleet Info
 
 Ce projet installe **automatiquement** un petit site web, « Fleet Info », sur plusieurs serveurs.
 Une commande crée les serveurs, une commande installe le site, et si une mise à jour rate,
@@ -97,10 +97,10 @@ Pour l'ouvrir, il faut une clé : le fichier `ansible/.vault_pass`.
 
 | Contrainte | Valeur |
 |---|---|
-| Durée d'une session | *à noter lors du premier lab* |
-| Région / zone autorisées | *à noter* (par défaut dans le code : `europe-west1-b`) |
-| Types de machine autorisés | *à noter* (par défaut : `e2-small`) |
-| Terraform sur le lab | Signalé comme ne fonctionnant pas encore (29/10/2026) |
+| Durée d'une session | 1 h |
+| Région / zone autorisées | Données par le lab (`us-east4` / `us-east4-b` lors de notre test) |
+| Types de machine autorisés | `e2-small` accepté |
+| Terraform sur le lab | Fonctionne (testé le 04/11/2026) |
 
 ---
 
@@ -148,7 +148,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/fleet_gcp -N ''
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
 curl -4 ifconfig.me          # affiche ton IP publique
-#    → dans terraform.tfvars : mettre l'ID du projet et ton IP (suivie de /32)
+#    → dans terraform.tfvars : mettre l'ID du projet, la région, la zone et ton IP (suivie de /32)
 
 # 4. Créer les machines
 terraform init
@@ -164,6 +164,14 @@ docker compose exec controller ansible-playbook -i inventories/cloud/fleet.gcp.y
 
 # 6. Voir les adresses des sites
 cd ../terraform && terraform output fleetinfo_urls
+```
+
+**Sous Windows :** utiliser PowerShell, pas WSL. Après le login, copier les identifiants pour le
+controller :
+
+```powershell
+New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\gcloud"
+Copy-Item "$env:APPDATA\gcloud\application_default_credentials.json" "$env:USERPROFILE\.config\gcloud\" -Force
 ```
 
 **Avant la fin du lab :** `terraform destroy` pour tout supprimer.
@@ -220,8 +228,8 @@ provider `hashicorp/google` en version 8.9 et le provider `hashicorp/local` en v
 
 | Réglage | Obligatoire ? | Valeur par défaut | À quoi il sert |
 |---|---|---|---|
-| `project_id` | **oui** | — | L'ID du projet donné par le lab |
-| `ssh_source_ranges` | **oui** | — | Ton IP, pour autoriser SSH (ouvrir à tout Internet est refusé) |
+| `project_id` | **oui** | aucune | L'ID du projet donné par le lab |
+| `ssh_source_ranges` | **oui** | aucune | Ton IP, pour autoriser SSH (ouvrir à tout Internet est refusé) |
 | `vm_count` | non | `2` | Nombre de machines |
 | `region` / `zone` | non | `europe-west1` / `europe-west1-b` | Où créer les machines |
 | `machine_type` | non | `e2-small` | Taille des machines |
@@ -250,7 +258,7 @@ le nom du réseau (`vpc_name`) et du sous-réseau (`subnet_name`).
 | **Ansible dans un conteneur** | Tout le monde a la même version, et ça marche aussi sous Windows. |
 | **Les clés SSH créées au démarrage** | Aucune clé n'est jamais enregistrée dans Git. |
 | **Les accès cloud dans un fichier à part** (`docker-compose.cloud.yml`) | En local, rien de personnel au PC (clés, compte Google) n'est donné au controller. |
-| **La clé SSH donnée à Google via les « métadonnées »** | C'est la méthode la plus simple. En entreprise, on utiliserait plutôt « OS Login », plus sûr mais plus compliqué. |
+| **La clé SSH donnée à Google via les « métadonnées »** | C'est la méthode la plus simple. Le lab active « OS Login » sur le projet, on le désactive donc sur nos VM. En entreprise, on le garderait : c'est plus sûr mais plus compliqué. |
 | **L'état Terraform gardé sur le PC** | Le lab est temporaire, une seule personne déploie. En entreprise, on le partagerait dans un stockage Google. |
 | **Une version = un dossier + un raccourci `current`** | Changer de version, ou revenir en arrière, revient à déplacer le raccourci : c'est instantané. |
 | **nginx rechargé (reload) plutôt que redémarré** | La nouvelle configuration est appliquée sans couper les visiteurs, et elle est vérifiée avant (`nginx -t`). |
@@ -281,7 +289,8 @@ Pour voir le détail de ce que fait Ansible : ajouter `-vvv` à la fin de la com
 | `/bin/sh^M: not found` au démarrage du controller | Fichier converti au format Windows : `docker compose build --no-cache controller` |
 | `port is already allocated` (8081 ou 8082) | Un autre programme utilise ce port : le fermer, ou changer le port dans `local/docker-compose.yml` |
 | Un conteneur `node` s'arrête tout seul | Redémarrer Docker Desktop, puis `docker compose up -d` |
-| `default credentials were not found` (cloud) | Refaire `gcloud auth application-default login` |
+| `default credentials were not found` (cloud) | Refaire `gcloud auth application-default login` (et la copie sous Windows) |
+| `Permission denied (publickey)` (cloud) | `docker compose restart controller`, sinon vérifier `enable-oslogin` dans `terraform/modules/compute/main.tf` |
 | `Unable to parse fleet.gcp.yml` (cloud) | Lancer d'abord `terraform apply`, c'est lui qui crée ce fichier |
 | Connexion SSH qui n'aboutit pas (cloud) | Ton IP a changé : la mettre à jour dans `terraform.tfvars`, puis `terraform apply` |
 | `ECHEC_ROLLBACK` dans le journal | Normal si la mise à jour a raté : le site est resté sur l'ancienne version |
@@ -290,8 +299,8 @@ Pour voir le détail de ce que fait Ansible : ajouter `-vvv` à la fin de la com
 
 ## 9. Limites connues
 
-- **Le cloud n'a pas été testé sur de vraies machines**, car le lab ne permettait pas d'utiliser
-  Terraform. Le code a seulement été vérifié avec `terraform validate`.
+- **Le rollback n'est pas instantané** : `current` change avant le test de `/health`, donc la
+  version cassée reste visible quelques secondes.
 - **L'environnement local n'est pas sécurisé** comme une vraie production. Il sert seulement au
   développement.
 - **Pas de HTTPS** : le mot de passe de `/status` circule en clair sur le réseau.
