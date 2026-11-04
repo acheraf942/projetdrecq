@@ -1,0 +1,39 @@
+# Rôle common : la base de tous les serveurs.
+
+- name: Installer les paquets de base
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+    update_cache: true
+    cache_valid_time: "{{ common_apt_cache_valid_time }}"
+
+# timedatectl ne marche pas dans un conteneur, donc on règle le fuseau à la main.
+- name: Régler le fuseau horaire (/etc/localtime)
+  ansible.builtin.file:
+    src: "/usr/share/zoneinfo/{{ common_timezone }}"
+    dest: /etc/localtime
+    state: link
+    force: true
+
+- name: Régler le fuseau horaire (/etc/timezone)
+  ansible.builtin.copy:
+    content: "{{ common_timezone }}\n"
+    dest: /etc/timezone
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Créer l'utilisateur d'exploitation
+  ansible.builtin.user:
+    name: "{{ common_ops_user }}"
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Installer le message d'accueil (/etc/motd)
+  ansible.builtin.template:
+    src: motd.j2
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: "0644"

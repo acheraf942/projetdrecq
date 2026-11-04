@@ -1,0 +1,14 @@
+# Variables propres au cloud.
+
+fleet_env: cloud
+
+# Utilisateur créé par GCP avec la clé donnée par Terraform.
+ansible_user: fleetadmin
+ansible_ssh_private_key_file: /root/.ssh/fleet_gcp
+# Les VM du lab changent à chaque session, on ne vérifie pas la clé d'hôte.
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+
+# Infos affichées seulement sur le cloud. GCP les donne sous forme d'URL,
+# basename garde juste la fin (ex : e2-small).
+fleetinfo_cloud_zone: "{{ zone | basename }}"
+fleetinfo_cloud_machine_type: "{{ machineType | basename }}"

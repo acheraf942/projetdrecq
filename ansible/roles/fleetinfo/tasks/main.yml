@@ -1,0 +1,149 @@
+# Rôle fleetinfo : déploie le site et revient à l'ancienne version si ça échoue.
+# Chaque version a son dossier dans releases/, et le lien « current » pointe sur la version affichée.
+
+- name: Créer les dossiers de l'application
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - "{{ fleetinfo_base_dir }}"
+    - "{{ fleetinfo_releases_dir }}"
+    - "{{ fleetinfo_log_dir }}"
+
+# On note la version actuelle avant de changer quoi que ce soit, pour pouvoir y revenir.
+- name: Regarder où pointe le lien current
+  ansible.builtin.stat:
+    path: "{{ fleetinfo_current_link }}"
+  register: fleetinfo_current
+
+- name: Retenir la version actuelle
+  ansible.builtin.set_fact:
+    fleetinfo_previous_version: "{{ fleetinfo_current.stat.lnk_target | basename if fleetinfo_current.stat.islnk | default(false) else '' }}"
+
+- name: Déployer la nouvelle version
+  block:
+    - name: Créer le dossier de la version
+      ansible.builtin.file:
+        path: "{{ fleetinfo_release_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    # La date est écrite une seule fois (force: false), sinon la page changerait à chaque passage.
+    - name: Enregistrer la date de déploiement
+      ansible.builtin.copy:
+        content: "{{ ansible_facts['date_time']['iso8601'] }}\n"
+        dest: "{{ fleetinfo_release_dir }}/DEPLOYED_AT"
+        force: false
+        owner: root
+        group: root
+        mode: "0644"
+
+    # failed_when: false car en mode --check le fichier n'existe pas encore.
+    - name: Lire la date de déploiement
+      ansible.builtin.slurp:
+        src: "{{ fleetinfo_release_dir }}/DEPLOYED_AT"
+      register: fleetinfo_deployed_at_file
+      failed_when: false
+
+    - name: Garder la date dans une variable
+      ansible.builtin.set_fact:
+        fleetinfo_deployed_at: >-
+          {{ fleetinfo_deployed_at_file.content | b64decode | trim
+             if fleetinfo_deployed_at_file.content is defined
+             else ansible_facts['date_time']['iso8601'] }}
+
+    - name: Créer la page d'accueil
+      ansible.builtin.template:
+        src: index.html.j2
+        dest: "{{ fleetinfo_release_dir }}/index.html"
+        owner: root
+        group: root
+        mode: "0644"
+      register: fleetinfo_page
+
+    - name: Créer la réponse de /health
+      ansible.builtin.template:
+        src: health.json.j2
+        dest: "{{ fleetinfo_release_dir }}/health.json"
+        owner: root
+        group: root
+        mode: "0644"
+      register: fleetinfo_health_file
+      when: not (fleetinfo_simulate_failure | bool)
+
+    # Simulation : sans health.json, /health répond 404 et le test échoue.
+    - name: Casser la version exprès (simulation)
+      ansible.builtin.file:
+        path: "{{ fleetinfo_release_dir }}/health.json"
+        state: absent
+      when: fleetinfo_simulate_failure | bool
+
+    - name: Faire pointer current sur la nouvelle version
+      ansible.builtin.file:
+        src: "{{ fleetinfo_release_dir }}"
+        dest: "{{ fleetinfo_current_link }}"
+        state: link
+        force: true
+      register: fleetinfo_link
+
+    - name: Tester /health
+      ansible.builtin.uri:
+        url: "{{ fleetinfo_health_url }}"
+        return_content: true
+      register: fleetinfo_health
+      until: fleetinfo_health.status == 200
+      retries: 3
+      delay: 2
+      when: not ansible_check_mode
+
+    - name: Vérifier que /health donne la bonne version
+      ansible.builtin.assert:
+        that:
+          - fleetinfo_health.json.status == 'ok'
+          - fleetinfo_health.json.version == fleetinfo_version
+      when: not ansible_check_mode
+
+  # Si une tâche du block a échoué : on remet l'ancienne version.
+  rescue:
+    - name: Noter l'échec
+      ansible.builtin.set_fact:
+        fleetinfo_deploy_failed: true
+
+    - name: Remettre current sur l'ancienne version
+      ansible.builtin.file:
+        src: "{{ fleetinfo_releases_dir }}/{{ fleetinfo_previous_version }}"
+        dest: "{{ fleetinfo_current_link }}"
+        state: link
+        force: true
+      when: fleetinfo_previous_version != ''
+
+    - name: Vérifier que l'ancienne version répond
+      ansible.builtin.uri:
+        url: "{{ fleetinfo_health_url }}"
+      when: fleetinfo_previous_version != ''
+
+    - name: Arrêter le play avec un message clair
+      ansible.builtin.fail:
+        msg: "Le déploiement de la version {{ fleetinfo_version }} a échoué. Retour à la version {{ fleetinfo_previous_version | default('aucune', true) }}."
+
+  # Toujours exécuté : on écrit une ligne dans le journal.
+  # Seulement s'il y a eu un vrai changement ou un échec, pour garder changed=0 au 2e passage.
+  always:
+    - name: Écrire dans le journal de déploiement
+      ansible.builtin.lineinfile:
+        path: "{{ fleetinfo_deploy_log }}"
+        line: >-
+          {{ now(fmt='%Y-%m-%d %H:%M:%S') }} {{ inventory_hostname }}
+          version={{ fleetinfo_version }}
+          ancienne={{ fleetinfo_previous_version | default('aucune', true) }}
+          resultat={{ 'ECHEC_ROLLBACK' if fleetinfo_deploy_failed | default(false) else 'OK' }}
+        create: true
+        owner: root
+        group: root
+        mode: "0644"
+      when: fleetinfo_deploy_failed | default(false) or fleetinfo_page is changed or fleetinfo_health_file is changed or fleetinfo_link is changed

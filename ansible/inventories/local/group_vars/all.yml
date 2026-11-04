@@ -1,0 +1,9 @@
+# Variables propres au local.
+
+fleet_env: local
+
+ansible_user: ansible
+# Clé créée par le controller au démarrage.
+ansible_ssh_private_key_file: /root/.ssh/id_ed25519
+# Les conteneurs sont souvent recréés, donc on ne vérifie pas la clé d'hôte (OK en local).
+ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"

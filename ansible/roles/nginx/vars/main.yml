@@ -1,0 +1,10 @@
+# Constantes du rôle nginx.
+
+nginx_packages:
+  - nginx
+  # Nécessaire au module htpasswd.
+  - python3-passlib
+
+nginx_site_available: /etc/nginx/sites-available/fleetinfo.conf
+nginx_site_enabled: /etc/nginx/sites-enabled/fleetinfo.conf
+nginx_htpasswd_file: /etc/nginx/fleetinfo.htpasswd

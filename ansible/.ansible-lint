@@ -1,0 +1,5 @@
+# Configuration d'ansible-lint.
+profile: production
+exclude_paths:
+  # Fichier chiffré, illisible pour le linter.
+  - group_vars/all/vault.yml

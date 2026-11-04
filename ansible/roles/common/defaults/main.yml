@@ -1,0 +1,16 @@
+# Valeurs par défaut du rôle common.
+
+# Paquets installés sur tous les serveurs.
+common_packages:
+  - curl
+  - less
+  - tzdata
+  - ca-certificates
+
+common_timezone: Europe/Paris
+
+# Compte pour l'équipe d'exploitation.
+common_ops_user: fleetops
+
+# Environnement affiché dans le message d'accueil.
+common_env: "{{ fleet_env | default('inconnu') }}"

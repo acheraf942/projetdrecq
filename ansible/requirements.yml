@@ -1,0 +1,8 @@
+# Collections nécessaires : ansible-galaxy collection install -r requirements.yml
+collections:
+  # Pour l'inventaire dynamique GCP.
+  - name: google.cloud
+    version: "1.15.0"
+  # Pour le module htpasswd (mot de passe de /status).
+  - name: community.general
+    version: "12.6.6"

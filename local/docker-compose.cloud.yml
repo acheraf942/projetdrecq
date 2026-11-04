@@ -1,0 +1,7 @@
+# À ajouter seulement pour le cloud : donne au controller la clé SSH et le compte Google du PC.
+# docker compose -f docker-compose.yml -f docker-compose.cloud.yml up -d
+services:
+  controller:
+    volumes:
+      - ${HOME}/.ssh:/root/.ssh-host:ro
+      - ${HOME}/.config/gcloud:/root/.config/gcloud:ro

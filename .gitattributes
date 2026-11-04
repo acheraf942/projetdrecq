@@ -1,0 +1,2 @@
+# Garde les fins de ligne Unix, même sous Windows.
+* text=auto eol=lf

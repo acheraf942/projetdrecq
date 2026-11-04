@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!-- {{ ansible_managed }} -->
+<!-- Source : roles/fleetinfo/templates/index.html.j2 -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Fleet Info - {{ ansible_facts['hostname'] }}</title>
+  <style>
+    body { font-family: sans-serif; margin: 2rem auto; max-width: 45rem; padding: 0 1rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; padding: .4rem; border-bottom: 1px solid #ddd; }
+    th { width: 40%; }
+  </style>
+</head>
+<body>
+  <h1>Fleet Info : {{ ansible_facts['hostname'] }}</h1>
+  <table>
+    <tr><th>Environnement</th><td>{{ fleetinfo_env }}</td></tr>
+    <tr><th>Nom complet</th><td>{{ ansible_facts['fqdn'] }}</td></tr>
+    <tr><th>Adresse IP</th><td>{{ ansible_facts['all_ipv4_addresses'] | join(', ') }}</td></tr>
+    <tr><th>Système</th><td>{{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }}</td></tr>
+    <tr><th>Noyau</th><td>{{ ansible_facts['kernel'] }}</td></tr>
+    <tr><th>vCPU</th><td>{{ ansible_facts['processor_vcpus'] }}</td></tr>
+    {# memtotal_mb est en Mo, on le passe en octets pour que human_readable l'affiche bien #}
+    <tr><th>Mémoire</th><td>{{ (ansible_facts['memtotal_mb'] * 1048576) | human_readable }}</td></tr>
+{% if fleetinfo_cloud_zone is defined %}
+    <tr><th>Zone GCP</th><td>{{ fleetinfo_cloud_zone }}</td></tr>
+{% endif %}
+{% if fleetinfo_cloud_machine_type is defined %}
+    <tr><th>Type de machine</th><td>{{ fleetinfo_cloud_machine_type }}</td></tr>
+{% endif %}
+    <tr><th>Équipe</th><td>{{ fleetinfo_team }}</td></tr>
+    <tr><th>Version</th><td>{{ fleetinfo_version }}</td></tr>
+    <tr><th>Déployée le</th><td>{{ fleetinfo_deployed_at }}</td></tr>
+  </table>
+</body>
+</html>

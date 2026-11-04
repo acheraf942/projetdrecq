@@ -1,0 +1,31 @@
+# {{ ansible_managed }}
+# Source : roles/nginx/templates/fleetinfo.conf.j2
+
+server {
+    listen {{ nginx_listen_port }} default_server;
+    server_name {{ nginx_server_name }};
+
+    # nginx suit le raccourci à chaque requête : changer de version ne demande pas de reload.
+    root {{ nginx_root }};
+    index index.html;
+
+    access_log /var/log/nginx/fleetinfo.access.log;
+    error_log  /var/log/nginx/fleetinfo.error.log;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location = /health {
+        default_type application/json;
+        add_header Cache-Control "no-store";
+        try_files /health.json =404;
+    }
+
+    location = /status {
+        stub_status;
+        auth_basic "Fleet Info";
+        auth_basic_user_file {{ nginx_htpasswd_file }};
+        access_log off;
+    }
+}

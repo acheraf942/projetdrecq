@@ -1,0 +1,27 @@
+# Modèle de l'inventaire GCP. Terraform le remplit et crée fleet.gcp.yml
+# (qui n'est pas dans Git car il contient l'ID du projet).
+# Ansible demande à Google la liste des VM qui ont les bons labels.
+plugin: google.cloud.gcp_compute
+
+projects:
+  - ${project_id}
+zones:
+  - ${zone}
+
+auth_kind: application
+
+# On garde seulement nos VM.
+filters:
+  - labels.role = ${role}
+  - labels.env = ${env}
+
+hostnames:
+  - name
+
+# Ansible se connecte à l'IP publique.
+compose:
+  ansible_host: networkInterfaces[0].accessConfigs[0].natIP
+
+# Même nom de groupe qu'en local.
+groups:
+  web: labels['role'] == '${role}'

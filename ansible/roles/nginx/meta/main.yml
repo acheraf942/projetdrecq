@@ -1,0 +1,10 @@
+galaxy_info:
+  author: Équipe Plateforme (ESIEA)
+  description: Serveur web nginx pour Fleet Info
+  license: MIT
+  min_ansible_version: "2.18"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+dependencies: []

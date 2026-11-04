@@ -1,0 +1,11 @@
+# Valeurs par défaut du rôle nginx.
+
+nginx_listen_port: 80
+# « _ » = accepte n'importe quel nom de domaine.
+nginx_server_name: "_"
+# Dossier affiché par le site : le raccourci géré par le rôle fleetinfo.
+nginx_root: /opt/fleetinfo/current
+
+# Accès à /status. Le mot de passe doit venir du Vault.
+nginx_status_user: admin
+nginx_status_password: ""

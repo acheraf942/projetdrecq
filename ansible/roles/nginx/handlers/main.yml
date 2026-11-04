@@ -1,0 +1,15 @@
+# Quand la config change : on la vérifie d'abord, puis on recharge nginx.
+# Si la vérification échoue, nginx n'est pas rechargé.
+# On recharge (reload) au lieu de redémarrer : pas de coupure pour les visiteurs.
+
+# Il n'existe pas de module pour « nginx -t », d'où command.
+- name: Vérifier la configuration nginx
+  ansible.builtin.command: nginx -t
+  changed_when: false
+  listen: nginx config modifiée
+
+- name: Recharger nginx
+  ansible.builtin.service:
+    name: nginx
+    state: reloaded
+  listen: nginx config modifiée

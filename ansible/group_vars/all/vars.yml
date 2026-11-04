@@ -1,0 +1,11 @@
+# Variables communes au local et au cloud.
+
+# Version de l'application. C'est le seul endroit où on la change.
+fleetinfo_version: "1.0.0"
+
+# Équipe affichée sur la page.
+fleet_team: plateforme
+
+# Accès à la page /status. Le vrai mot de passe est dans vault.yml (chiffré).
+nginx_status_user: exploit
+nginx_status_password: "{{ vault_nginx_status_password }}"

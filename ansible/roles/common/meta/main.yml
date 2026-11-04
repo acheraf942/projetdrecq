@@ -1,0 +1,10 @@
+galaxy_info:
+  author: Équipe Plateforme (ESIEA)
+  description: Base des serveurs (paquets, fuseau horaire, utilisateur, message d'accueil)
+  license: MIT
+  min_ansible_version: "2.18"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+dependencies: []

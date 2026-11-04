@@ -1,0 +1,6 @@
+# Constantes du rôle fleetinfo.
+
+fleetinfo_releases_dir: "{{ fleetinfo_base_dir }}/releases"
+fleetinfo_release_dir: "{{ fleetinfo_releases_dir }}/{{ fleetinfo_version }}"
+fleetinfo_current_link: "{{ fleetinfo_base_dir }}/current"
+fleetinfo_deploy_log: "{{ fleetinfo_log_dir }}/deploy.log"

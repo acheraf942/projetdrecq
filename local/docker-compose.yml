@@ -1,0 +1,60 @@
+# Environnement local : 2 nœuds Debian + 1 controller Ansible.
+# Lancement : docker compose up -d --build
+# Sites : http://localhost:8081 (node1) et http://localhost:8082 (node2)
+
+# Configuration commune aux deux nœuds.
+x-node: &node
+  build: ./node
+  image: fleet-node:local
+  # Nécessaire pour que systemd fonctionne sous Docker Desktop.
+  privileged: true
+  cgroup: host
+  volumes:
+    - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    - ssh-pubkey:/ssh-pubkey:ro
+  tmpfs:
+    - /run
+    - /run/lock
+  networks:
+    - fleet
+
+services:
+  node1:
+    <<: *node
+    hostname: node1
+    container_name: fleet-node1
+    ports:
+      - "8081:80"
+
+  node2:
+    <<: *node
+    hostname: node2
+    container_name: fleet-node2
+    ports:
+      - "8082:80"
+
+  controller:
+    build:
+      context: ..
+      dockerfile: local/controller/Dockerfile
+    image: fleet-controller:local
+    hostname: controller
+    container_name: fleet-controller
+    environment:
+      ANSIBLE_CONFIG: /ansible/ansible.cfg
+      ANSIBLE_VAULT_PASSWORD_FILE: /usr/local/bin/vault-pass.sh
+    volumes:
+      - ../ansible:/ansible
+      - ssh-pubkey:/ssh-pubkey
+    depends_on:
+      - node1
+      - node2
+    networks:
+      - fleet
+
+# Volume partagé : la clé publique du controller.
+volumes:
+  ssh-pubkey:
+
+networks:
+  fleet:

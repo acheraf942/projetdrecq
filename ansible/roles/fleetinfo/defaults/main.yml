@@ -1,0 +1,20 @@
+# Valeurs par défaut du rôle fleetinfo.
+
+# La vraie valeur est dans group_vars/all/vars.yml.
+fleetinfo_version: "1.0.0"
+
+fleetinfo_base_dir: /opt/fleetinfo
+fleetinfo_log_dir: /var/log/fleetinfo
+
+# Infos affichées sur la page.
+fleetinfo_env: "{{ fleet_env | default('inconnu') }}"
+fleetinfo_team: "{{ fleet_team | default('inconnue') }}"
+
+# Adresse testée après chaque déploiement.
+fleetinfo_health_url: "http://127.0.0.1:{{ nginx_listen_port | default(80) }}/health"
+
+# À true, la nouvelle version est livrée cassée, pour tester le rollback.
+fleetinfo_simulate_failure: false
+
+# fleetinfo_cloud_zone et fleetinfo_cloud_machine_type ne sont pas définies ici :
+# elles viennent de inventories/cloud/group_vars.

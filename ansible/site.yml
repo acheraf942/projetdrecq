@@ -1,0 +1,12 @@
+# Playbook principal : installe les serveurs web et déploie Fleet Info.
+# Le même fichier sert en local et sur le cloud, seul l'inventaire change.
+- name: Configurer les serveurs web et déployer Fleet Info
+  hosts: web
+  become: true
+  roles:
+    - role: common
+      tags: [common]
+    - role: nginx
+      tags: [nginx]
+    - role: fleetinfo
+      tags: [fleetinfo]

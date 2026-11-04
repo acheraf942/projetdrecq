@@ -1,0 +1,4 @@
+# Constantes du rôle common.
+
+# Ne refait pas « apt update » si le dernier date de moins d'une heure.
+common_apt_cache_valid_time: 3600

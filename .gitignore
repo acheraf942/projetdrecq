@@ -1,0 +1,39 @@
+# .gitignore : tout ce qui est sensible ou généré ne doit JAMAIS arriver dans Git.
+
+# --- Ansible ---
+# Mot de passe Vault : transmis hors Git (voir README, section « Prérequis »).
+.vault_pass
+*.vault_pass
+*.retry
+
+# --- Clés SSH (générées au démarrage du controller ou par l'utilisateur) ---
+*.pem
+id_rsa*
+id_ed25519*
+fleet_gcp*
+local/ssh/
+
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+terraform.tfvars
+*.auto.tfvars
+# Le lock file des providers, lui, EST versionné (versions reproductibles).
+!.terraform.lock.hcl
+
+# --- Identifiants GCP ---
+*credentials*.json
+*service-account*.json
+gcp-key*.json
+
+# --- Divers ---
+.DS_Store
+.vscode/
+__pycache__/
+
+# --- Inventaire cloud généré par Terraform (contient le project_id du lab) ---
+ansible/inventories/cloud/fleet.gcp.yml
+
