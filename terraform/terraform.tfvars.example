@@ -6,7 +6,7 @@ project_id = "qwiklabs-gcp-00-000000000000"
 # Votre IP publique (commande : curl -4 ifconfig.me), suivie de /32.
 ssh_source_ranges = ["203.0.113.10/32"]
 
-# À décommenter avec les valeurs du lab :
+# À changer si le lab impose autre chose :
 # region       = "europe-west1"
 # zone         = "europe-west1-b"
 # machine_type = "e2-small"
