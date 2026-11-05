@@ -80,9 +80,31 @@ chacune d'elles.
 Ansible est déjà dans le conteneur `controller`, rien d'autre à installer.
 
 **Pour le cloud, il faut en plus :**
-- **Terraform** (version 1.9 ou plus) : `brew install terraform` sur Mac ;
-- **gcloud** (l'outil en ligne de commande de Google) ;
-- un **lab Google Skills** démarré : il te prête un compte Google pour une durée limitée.
+- un **lab Google Skills** démarré : il te prête un compte Google pour une durée limitée. L'un de
+  ces deux labs fait l'affaire :
+  - https://www.skills.google/paths/11/course_templates/443/labs/576066
+  - https://www.skills.google/paths/11/course_templates/443/labs/508950
+
+  Clique sur « Démarrer l'atelier », puis connecte-toi à la console avec le compte affiché dans le
+  panneau du lab (en navigation privée, pour ne pas mélanger avec ton compte perso). Le panneau
+  donne aussi l'**ID du projet**, la **région** et la **zone**.
+- **Terraform** (version 1.9 ou plus) et **gcloud**. Deux possibilités :
+  - **le plus simple : Cloud Shell** (icône `>_` en haut à droite de la console Google). Terraform,
+    gcloud et Docker y sont déjà installés. Il suffit d'y récupérer le projet et le mot de passe du
+    Vault :
+    ```bash
+    git clone https://github.com/acheraf942/projetdrecq.git
+    cd projetdrecq
+    echo 'LE_MOT_DE_PASSE_RECU' > ansible/.vault_pass
+    ```
+  - **sur ton PC (Mac)** :
+    ```bash
+    brew tap hashicorp/tap
+    brew install hashicorp/tap/terraform     # « brew install terraform » ne marche plus
+    brew install --cask gcloud-cli
+    ```
+    Sous Windows : installer [Terraform](https://developer.hashicorp.com/terraform/install) et
+    [gcloud](https://cloud.google.com/sdk/docs/install) depuis les sites officiels.
 
 
 ### Le mot de passe du coffre-fort (Vault)
@@ -108,7 +130,7 @@ Pour l'ouvrir, il faut une clé : le fichier `ansible/.vault_pass`.
 | Contrainte | Valeur |
 |---|---|
 | Durée d'une session | 1 h |
-| Région / zone autorisées | Données par le lab (`us-east4` / `us-east4-b` lors de notre test) |
+| Région / zone autorisées | Données par le lab (`us-east4` / `us-east4-b` lors de nos tests du 04 et 05/11/2026) |
 | Types de machine autorisés | `e2-small` accepté |
 | Terraform sur le lab | Fonctionne (testé le 04/11/2026) |
 
@@ -150,6 +172,8 @@ une par serveur.
 
 ```bash
 # 1. Se connecter avec le compte DU LAB (pas ton compte perso)
+#    (dans Cloud Shell, ajouter --no-launch-browser aux 2 « login » si le navigateur ne s'ouvre pas ;
+#     application-default login reste OBLIGATOIRE : le controller Docker en a besoin)
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project <ID_DU_PROJET_DU_LAB>
@@ -162,7 +186,11 @@ ssh-keygen -t ed25519 -f ~/.ssh/fleet_gcp -N ''
 cd terraform
 cp terraform.tfvars.example terraform.tfvars
 curl -4 ifconfig.me          # affiche ton IP publique
-#    → dans terraform.tfvars : mettre l'ID du projet, la région, la zone et ton IP (suivie de /32)
+#    → dans terraform.tfvars : mettre l'ID du projet, ton IP (suivie de /32),
+#      et DÉCOMMENTER LES DEUX lignes region ET zone avec les valeurs du lab.
+#      La zone doit être dans la région (ex. us-east4 → us-east4-b). Si tu n'en changes
+#      qu'une, l'autre garde sa valeur par défaut (europe-west1) et la création des VM échoue.
+grep -E '^ *(project_id|ssh_source_ranges|region|zone)' terraform.tfvars   # vérifier : 4 lignes
 
 # 4. Créer les machines
 terraform init
@@ -174,7 +202,10 @@ cd ../local
 #    Ce 2e fichier donne au controller ta clé SSH et ton accès Google.
 #    Sous Windows (PowerShell), tape d'abord : $env:HOME = $env:USERPROFILE
 docker compose -f docker-compose.yml -f docker-compose.cloud.yml up -d
+docker compose exec controller ansible-inventory -i inventories/cloud/fleet.gcp.yml --graph
+#    → doit afficher les VM (fleet-web-1, fleet-web-2) sous « web »
 docker compose exec controller ansible-playbook -i inventories/cloud/fleet.gcp.yml site.yml
+#    → failed=0 ; relancé une 2e fois → changed=0
 
 # 6. Voir les adresses des sites
 cd ../terraform && terraform output fleetinfo_urls
@@ -308,6 +339,9 @@ Pour voir le détail de ce que fait Ansible : ajouter `-vvv` à la fin de la com
 | `default credentials were not found` (cloud) | Refaire `gcloud auth application-default login` (et la copie sous Windows) |
 | `Permission denied (publickey)` (cloud) | `docker compose restart controller`, sinon vérifier `enable-oslogin` dans `terraform/modules/compute/main.tf` |
 | `Unable to parse fleet.gcp.yml` (cloud) | Lancer d'abord `terraform apply`, c'est lui qui crée ce fichier |
+| `Scope of the specified subnetwork doesn't match the scope of the instance` (cloud) | La zone n'est pas dans la région : dans `terraform.tfvars`, décommenter et corriger **les deux** lignes `region` et `zone` (ex. `us-east4` / `us-east4-b`), puis `terraform apply` |
+| `[WARNING]: Found variable using reserved name: name` (ou `tags`) (cloud) | Normal, sans conséquence : ces noms viennent des informations des VM envoyées par l'inventaire GCP |
+| `argument -e/--extra-vars: expected one argument` | La commande a été coupée au copier-coller : la recopier en entier (version sur plusieurs lignes avec `\`) |
 | Connexion SSH qui n'aboutit pas (cloud) | Ton IP a changé : la mettre à jour dans `terraform.tfvars`, puis `terraform apply` |
 | `ECHEC_ROLLBACK` dans le journal | Normal si la mise à jour a raté : le site est resté sur l'ancienne version |
 

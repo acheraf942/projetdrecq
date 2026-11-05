@@ -31,13 +31,31 @@ le message « Le déploiement de la version X a échoué. Retour à la version Y
 
 **Tester le rollback :**
 ```bash
-docker compose exec controller ansible-playbook site.yml -e fleetinfo_version=1.2.0 -e fleetinfo_simulate_failure=true
+docker compose exec controller ansible-playbook site.yml \
+  -e fleetinfo_version=1.2.0 \
+  -e fleetinfo_simulate_failure=true
 curl http://localhost:8081/health                         # toujours l'ancienne version
 docker exec fleet-node1 tail -1 /var/log/fleetinfo/deploy.log   # resultat=ECHEC_ROLLBACK
 ```
 Il faut demander une version différente de celle qui est en ligne.
 
-Sur le cloud : `curl http://<IP>/health`, puis `sudo tail -1 /var/log/fleetinfo/deploy.log` en SSH.
+Sur le cloud (IP données par `terraform output fleetinfo_urls`) :
+```bash
+docker compose exec controller ansible-playbook \
+  -i inventories/cloud/fleet.gcp.yml site.yml \
+  -e fleetinfo_version=1.2.0 \
+  -e fleetinfo_simulate_failure=true
+curl http://<IP>/health                                                        # toujours l'ancienne version
+ssh -i ~/.ssh/fleet_gcp fleetadmin@<IP> sudo tail -1 /var/log/fleetinfo/deploy.log   # resultat=ECHEC_ROLLBACK
+```
+Le journal est **sur la VM** : lancer `tail` directement dans Cloud Shell ou sur ton PC ne trouve
+pas le fichier, d'où le `ssh` devant.
+
+Ensuite, prouver qu'une version saine se déploie normalement :
+```bash
+docker compose exec controller ansible-playbook site.yml -e fleetinfo_version=1.1.0
+curl http://localhost:8081/health      # 1.1.0
+```
 
 ---
 
@@ -59,7 +77,7 @@ Penser ensuite à remettre `vars.yml` à jour.
 ## 3. Ajouter ou retirer un serveur
 
 **Cloud :**
-1. Dans `terraform/terraform.tfvars`, changer `vm_count` (ex. `3`).
+1. Dans `terraform/terraform.tfvars`, décommenter la ligne `vm_count` (enlever le `#`) et la changer (ex. `vm_count = 3`).
 2. `terraform apply`
 3. Lancer `site.yml` avec l'inventaire cloud. Rien à changer dans Ansible.
 
