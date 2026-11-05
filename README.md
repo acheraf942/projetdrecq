@@ -72,7 +72,11 @@ chacune d'elles.
 
 ## 3. Prérequis et accès
 
-**Pour le local, il suffit de [Docker Desktop](https://www.docker.com/products/docker-desktop/).**
+**Pour le local, il faut :**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/), **installé et lancé** ;
+- le fichier `ansible/.vault_pass`, qui contient le mot de passe du coffre-fort (voir plus bas).
+  **Sans lui, rien ne fonctionne, même en local.**
+
 Ansible est déjà dans le conteneur `controller`, rien d'autre à installer.
 
 **Pour le cloud, il faut en plus :**
@@ -87,10 +91,16 @@ Les mots de passe du projet sont rangés dans un fichier **chiffré** (`ansible/
 Pour l'ouvrir, il faut une clé : le fichier `ansible/.vault_pass`.
 
 - Cette clé n'est **jamais** mise dans Git. Demande-la à un membre de l'équipe par message privé.
-- Pour la créer sur ton PC :
+- Pour la créer sur ton PC, en remplaçant `LE_MOT_DE_PASSE_RECU` par le vrai mot de passe :
   ```bash
+  # Depuis la RACINE du projet :
   echo 'LE_MOT_DE_PASSE_RECU' > ansible/.vault_pass
+
+  # Ou depuis le dossier local/ (là où se tapent les autres commandes) :
+  echo 'LE_MOT_DE_PASSE_RECU' > ../ansible/.vault_pass
   ```
+  Si tu obtiens `no such file or directory`, c'est que tu n'es pas dans le bon dossier.
+- Mot de passe perdu ? Voir [docs/RUNBOOKS.md §5](docs/RUNBOOKS.md#5-changer-les-mots-de-passe).
 - **Envoie le projet par Git** (pas en .zip) : un .zip du dossier contiendrait ce mot de passe.
 
 ### Les contraintes du lab Google
@@ -107,6 +117,10 @@ Pour l'ouvrir, il faut une clé : le fichier `ansible/.vault_pass`.
 ## 4. Installer de zéro
 
 ### En local (environ 5 minutes)
+
+**Avant de commencer :**
+- lance **Docker Desktop** et attends qu'il soit prêt (`docker info` doit répondre sans erreur) ;
+- crée le fichier `ansible/.vault_pass` (voir §3).
 
 Toutes les commandes se tapent dans le dossier `local/`.
 
@@ -284,7 +298,9 @@ Pour voir le détail de ce que fait Ansible : ajouter `-vvv` à la fin de la com
 
 | Message d'erreur | Solution |
 |---|---|
-| `no vault secrets found` ou `vault-pass.sh returned non-zero` | Il manque le fichier `ansible/.vault_pass` (voir §3) |
+| `Cannot connect to the Docker daemon` | Docker Desktop n'est pas lancé : le démarrer, attendre qu'il soit prêt, puis relancer la commande |
+| `vault-pass.sh returned non-zero` | Il manque le fichier `ansible/.vault_pass` (voir §3) |
+| `Decryption failed (no vault secrets were found that could decrypt)` | Le fichier `ansible/.vault_pass` existe mais contient un **mauvais mot de passe** (faute de frappe, espace ou guillemet en trop, texte d'exemple laissé tel quel) : le réécrire (voir §3) |
 | `Permission denied (publickey)` | `docker compose restart controller` |
 | `/bin/sh^M: not found` au démarrage du controller | Fichier converti au format Windows : `docker compose build --no-cache controller` |
 | `port is already allocated` (8081 ou 8082) | Un autre programme utilise ce port : le fermer, ou changer le port dans `local/docker-compose.yml` |

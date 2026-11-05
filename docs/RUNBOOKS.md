@@ -111,6 +111,23 @@ Puis envoyer le nouveau mot de passe à l'équipe par message privé.
 
 **Vérifier :** `docker compose exec controller ansible-vault view group_vars/all/vault.yml` marche.
 
+**Mot de passe du Vault perdu (personne de l'équipe ne l'a plus) :**
+
+Il est impossible de le retrouver ni de déchiffrer l'ancien `vault.yml`. Il faut recréer le coffre-fort
+avec un nouveau mot de passe, et y remettre les secrets :
+```bash
+rm ../ansible/group_vars/all/vault.yml
+echo 'NOUVEAU_MOT_DE_PASSE' > ../ansible/.vault_pass
+docker compose exec controller ansible-vault create group_vars/all/vault.yml
+#   → dans l'éditeur, écrire :
+#     vault_nginx_status_password: "nouveau_mot_de_passe_de_status"
+docker compose exec controller ansible-playbook site.yml --tags nginx
+```
+Puis commiter le nouveau `vault.yml` et envoyer le nouveau mot de passe à l'équipe par message privé.
+
+**Vérifier :** `ansible-vault view` marche (voir ci-dessus), et http://localhost:8081/status accepte
+le nouveau mot de passe.
+
 ---
 
 ## 6. Vérifier qu'un serveur est conforme
